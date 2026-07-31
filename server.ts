@@ -1,4 +1,5 @@
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
 import nodemailer, { TransportOptions } from "nodemailer";
 import path from "path";

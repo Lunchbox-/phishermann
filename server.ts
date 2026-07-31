@@ -1,31 +1,23 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { createServer as createViteServer } from "vite";
-import nodemailer, { TransportOptions } from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import path from "path";
 import "dotenv/config";
 
 // ---------------------------------------------------------------------------
 // Configuration (sourced from environment / .env)
 // ---------------------------------------------------------------------------
-const SMTP_HOST    = process.env.SMTP_HOST      || "smtp.gmail.com";
-const SMTP_PORT    = parseInt(process.env.SMTP_PORT || "465", 10);
-const SMTP_FROM    = process.env.SMTP_FROM      || "precisionfluidcontrols@neoknightlabs.com";
-const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME || "PFC Valves";
-const SMTP_PASS    = process.env.SMTP_PASS      || "";
-const APP_URL      = (process.env.APP_URL       || "https://neoknightlabs.com").replace(/\/$/, "");
-const ADMIN_SECRET = process.env.ADMIN_SECRET   || "";
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || "";
+const SMTP_FROM        = process.env.SMTP_FROM        || "precisionfluidcontrols@neoknightlabs.com";
+const SMTP_FROM_NAME   = process.env.SMTP_FROM_NAME   || "PFC Valves";
+const APP_URL          = (process.env.APP_URL         || "https://neoknightlabs.com").replace(/\/$/, "");
+const ADMIN_SECRET     = process.env.ADMIN_SECRET     || "";
 
-// Gmail SMTP via App Password — SSL on port 465
-const mailer = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: true,    // SSL from the start (required for port 465)
-  auth: {
-    user: SMTP_FROM,
-    pass: SMTP_PASS,
-  },
-} as TransportOptions);
+if (!SENDGRID_API_KEY) {
+  console.error("[ERROR] SENDGRID_API_KEY is not set. Emails will not send.");
+}
+sgMail.setApiKey(SENDGRID_API_KEY);
 
 // ---------------------------------------------------------------------------
 // In-memory log store
@@ -188,8 +180,8 @@ async function startServer() {
     });
 
     try {
-      await mailer.sendMail({
-        from: `"${SMTP_FROM_NAME}" <${SMTP_FROM}>`,
+      await sgMail.send({
+        from: { name: SMTP_FROM_NAME, email: SMTP_FROM },
         to: email,
         subject,
         html,
@@ -198,10 +190,9 @@ async function startServer() {
       console.log(`[SIMULATION] Email sent — UID: ${uid}, To: ${email}`);
       res.json({ status: "sent", uid, trackingUrl });
     } catch (err: unknown) {
-      console.error("[SIMULATION] SMTP error:", err);
-      // Remove the log entry if delivery failed so results stay accurate
+      console.error("[SIMULATION] SendGrid error:", err);
       campaignLogs.delete(uid);
-      const message = err instanceof Error ? err.message : "Unknown SMTP error";
+      const message = err instanceof Error ? err.message : "Unknown SendGrid error";
       res.status(500).json({ error: message });
     }
   });

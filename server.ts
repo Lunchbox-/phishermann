@@ -9,18 +9,18 @@ import "dotenv/config";
 // Configuration (sourced from environment / .env)
 // ---------------------------------------------------------------------------
 const SMTP_HOST    = process.env.SMTP_HOST      || "smtp.gmail.com";
-const SMTP_PORT    = parseInt(process.env.SMTP_PORT || "587", 10);
+const SMTP_PORT    = parseInt(process.env.SMTP_PORT || "465", 10);
 const SMTP_FROM    = process.env.SMTP_FROM      || "precisionfluidcontrols@neoknightlabs.com";
 const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME || "PFC Valves";
 const SMTP_PASS    = process.env.SMTP_PASS      || "";
 const APP_URL      = (process.env.APP_URL       || "https://neoknightlabs.com").replace(/\/$/, "");
 const ADMIN_SECRET = process.env.ADMIN_SECRET   || "";
 
-// Gmail SMTP via App Password — STARTTLS on port 587
+// Gmail SMTP via App Password — SSL on port 465
 const mailer = nodemailer.createTransport({
   host: SMTP_HOST,
   port: SMTP_PORT,
-  secure: false,   // STARTTLS (upgrades after connect), not SSL-on-connect
+  secure: true,    // SSL from the start (required for port 465)
   auth: {
     user: SMTP_FROM,
     pass: SMTP_PASS,
